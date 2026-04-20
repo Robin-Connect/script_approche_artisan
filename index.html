@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Script approche artisan</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;padding:1.5rem 1rem}
+  .container{max-width:720px;margin:0 auto}
+  h1{font-size:20px;font-weight:600;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#888;margin-bottom:1.5rem}
+  .nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem}
+  .nav button{font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid #ddd;background:#fff;color:#555;cursor:pointer;transition:all 0.15s;font-weight:500}
+  .nav button:hover{border-color:#999;color:#1a1a1a}
+  .nav button.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  .situation{display:none}
+  .situation.active{display:block}
+  .block{background:#fff;border:1px solid #e8e8e8;border-radius:12px;margin-bottom:10px;overflow:hidden}
+  .block-header{padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+  .block-header:hover{background:#fafaf8}
+  .block-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+  .tag-ouverture{background:#E6F1FB;color:#0C447C}
+  .tag-benefice{background:#EAF3DE;color:#27500A}
+  .tag-chiffres{background:#EEEDFE;color:#3C3489}
+  .tag-objection{background:#FFF3CD;color:#856404}
+  .tag-reseau{background:#E1F5EE;color:#085041}
+  .tag-engagement{background:#FAEEDA;color:#633806}
+  .tag-conclusion{background:#f0faf4;color:#145a2a}
+  .tag-reticence{background:#FCEBEB;color:#A32D2D}
+  .block-title{font-size:13px;font-weight:500;color:#1a1a1a;flex:1}
+  .chevron{width:16px;height:16px;color:#aaa;transition:transform 0.2s;flex-shrink:0}
+  .chevron.open{transform:rotate(90deg)}
+  .block-body{display:none;border-top:1px solid #f0f0ec;padding:14px 16px}
+  .block-body.open{display:block}
+  .phrase-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#aaa;margin-bottom:6px;margin-top:12px}
+  .phrase-label:first-child{margin-top:0}
+  .phrase{background:#fafaf8;border-left:3px solid #1a1a1a;border-radius:0 8px 8px 0;padding:10px 14px;font-size:14px;line-height:1.6;color:#1a1a1a;margin-bottom:6px;cursor:pointer;transition:background 0.15s;position:relative}
+  .phrase:hover{background:#f0ede8}
+  .phrase.copied{background:#f0faf4;border-left-color:#2d9e5c}
+  .copy-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:#aaa;pointer-events:none}
+  .note{background:#f5f5f3;border-radius:8px;padding:8px 12px;font-size:12px;color:#666;line-height:1.5;margin-top:8px;font-style:italic}
+  .warning{background:#FFF7ED;border-left:3px solid #D97706;border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:#633806;line-height:1.5;margin-top:8px}
+  .success-note{background:#f0faf4;border-left:3px solid #2d9e5c;border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:#145a2a;line-height:1.5;margin-top:8px}
+  .chiffre-bloc{background:#EEEDFE;border-radius:10px;padding:12px 16px;margin:8px 0}
+  .chiffre-bloc .chiffre{font-size:22px;font-weight:600;color:#3C3489;margin-bottom:2px}
+  .chiffre-bloc .chiffre-label{font-size:12px;color:#534AB7;line-height:1.5}
+  .chiffres-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+  .situation-intro{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .situation-intro p{font-size:13px;color:#555;line-height:1.6}
+  .copy-toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999}
+  .copy-toast.show{opacity:1}
+  .footer{margin-top:2rem;font-size:12px;color:#bbb;text-align:center}
+  @media(max-width:500px){.chiffres-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Script approche artisan</h1>
+  <p class="subtitle">Présentation du service — cliquer sur les phrases pour copier</p>
+
+  <div class="nav">
+    <button class="active" onclick="switchSit('accroche')">Accroche</button>
+    <button onclick="switchSit('benefices')">Bénéfices</button>
+    <button onclick="switchSit('chiffres')">Chiffres</button>
+    <button onclick="switchSit('reseau')">Réseau</button>
+    <button onclick="switchSit('engagement')">Engagement</button>
+    <button onclick="switchSit('reticences')">Réticences</button>
+    <button onclick="switchSit('conclusion')">Conclusion</button>
+  </div>
+
+  <!-- ══ ACCROCHE ══════════════════════════════════════════════════════════ -->
+  <div id="sit-accroche" class="situation active">
+    <div class="situation-intro">
+      <p>Premier contact — en personne, par téléphone ou par message. L'objectif n'est pas de vendre, c'est d'ouvrir une conversation sur un problème qu'il connaît déjà.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-ouverture">Ouverture</span>
+        <span class="block-title">Entrer dans la conversation</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Question d'ouverture (ne pas parler du service)</div>
+        <div class="phrase" onclick="copyPhrase(this)">Est-ce qu'il t'arrive souvent de finir ta journée avec des appels en absence que t'as pas eu le temps de rappeler ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Quand t'es sur un chantier et que le téléphone sonne, tu fais quoi en général ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Laisse-le parler. Ne coupe pas. Presque tous répondront oui. C'est là que tu as ta porte d'entrée.</div>
+        <div class="phrase-label">Après qu'il a confirmé le problème</div>
+        <div class="phrase" onclick="copyPhrase(this)">Et quand tu rappelles le soir, combien de fois le client a déjà trouvé quelqu'un d'autre ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Transition vers la présentation</div>
+        <div class="phrase" onclick="copyPhrase(this)">C'est exactement ce que j'adresse. Je gère les appels que tu rates quand t'es indisponible — je qualifie la demande, je propose un créneau, et tu reçois un résumé sur WhatsApp. Le client pense avoir parlé à ton secrétariat.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne pas partir sur le modèle économique tout de suite. Laisse-le poser des questions d'abord.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-ouverture">Ouverture</span>
+        <span class="block-title">Approche par message (WhatsApp / SMS)</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Message court — premier contact</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour [PRÉNOM], je m'appelle [TON PRÉNOM]. Je développe un service de coordination pour les artisans plombiers et chauffagistes à Paris — je gère les appels entrants quand t'es sur chantier. Tu aurais 10 minutes cette semaine pour qu'on en discute ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Message court, question fermée, pas de sur-vente. L'objectif est juste d'obtenir un rendez-vous.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ BÉNÉFICES ══════════════════════════════════════════════════════════ -->
+  <div id="sit-benefices" class="situation">
+    <div class="situation-intro">
+      <p>Les arguments concrets — temps, argent, organisation, professionnalisme. Présente-les dans l'ordre de ce qui résonne le plus avec lui, selon ce qu'il t'a dit en ouverture.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-benefice">Temps</span>
+        <span class="block-title">Le temps récupéré</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Combien de temps tu passes chaque soir à rappeler des gens qui ne répondent plus, ou à expliquer dix fois la même chose à des clients ? Ce temps-là, tu le récupères complètement.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Tu arrêtes de regarder ton téléphone toutes les dix minutes sur un chantier. Le planning tourne tout seul. T'arrives à une intervention en sachant exactement ce qui t'attend.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Relier à ce qu'il t'a dit : si il a mentionné les rappels du soir, c'est le bon angle.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-benefice">Argent</span>
+        <span class="block-title">Les missions captées</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Chaque appel que tu manques et qui part chez un concurrent, c'est du chiffre d'affaires que tu reverras jamais. Ce n'est pas forcément énorme — peut-être 2 ou 3 missions par semaine — mais sur un an, ça représente plusieurs milliers d'euros qui partent ailleurs.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Je ne te promets pas de doubler ton carnet de commandes. Mais les clients qui t'appellent quand t'es sur chantier, là tu n'en perds plus aucun.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne jamais surestimer. Rester sur "2 à 3 missions par semaine" — c'est réaliste et vérifiable.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-benefice">Organisation</span>
+        <span class="block-title">Le planning maîtrisé</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Chaque mission confirmée s'ajoute directement à ton Google Calendar. Tu vois ta semaine en un coup d'œil, avec l'adresse, le type d'intervention, et le numéro du client. Plus de double réservation, plus d'oubli.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Tu reçois un résumé WhatsApp pour chaque mission — client, adresse, problème décrit, créneau. T'arrives préparé. Ça change l'image que le client a de toi dès le premier contact.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-benefice">Image</span>
+        <span class="block-title">La professionnalisation</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Quand un client appelle et tombe sur un secrétariat qui répond en 3 sonneries, qualifie sa demande, et lui propose un créneau précis — il perçoit ça comme une entreprise structurée. Ça crée de la confiance avant même que tu arrives.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Les artisans qui grandissent, c'est souvent pas les meilleurs techniciens. C'est ceux qui donnent l'impression d'être organisés. Ça commence par le premier appel.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-benefice">Économie</span>
+        <span class="block-title">Par rapport à une secrétaire</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Une secrétaire à temps plein, même à mi-temps, ça coûte entre 1 500 et 2 500 euros par mois charges comprises. Tu gères un salarié, les congés, les arrêts maladie. Moi je gère les appels et le planning pour une fraction de ce coût, sans contrainte de gestion humaine.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Je ne remplace pas une secrétaire complète — je gère ce qu'un artisan solo a vraiment besoin de déléguer : les appels, le planning, les devis simples. Le reste reste chez toi.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne pas dire "je suis comme une secrétaire". Dire "je couvre ce qu'un artisan solo ne peut pas gérer seul". La comparaison est un argument, pas une promesse de service identique.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-benefice">Suivi</span>
+        <span class="block-title">La gestion et le suivi clients</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Chaque intervention est tracée — le client, l'adresse, le type de travaux, le prix facturé. Au bout de 6 mois, tu as un historique complet de ton activité que tu n'aurais jamais construit seul. C'est utile pour ta comptabilité, pour tes devis, pour voir ce qui marche.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Tu reçois chaque mois un résumé de tes missions, ton chiffre d'affaires généré via le service, et ton score de réactivité. C'est transparent — tu vois exactement ce que ça t'apporte.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CHIFFRES ════════════════════════════════════════════════════════════ -->
+  <div id="sit-chiffres" class="situation">
+    <div class="situation-intro">
+      <p>Les chiffres à utiliser — réalistes, pas gonflés. L'objectif est de lui permettre de faire le calcul lui-même. Un artisan qui calcule seul est plus convaincu qu'un artisan à qui on annonce un résultat.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-chiffres">Base de calcul</span>
+        <span class="block-title">Poser les chiffres ensemble</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Faire le calcul avec lui</div>
+        <div class="phrase" onclick="copyPhrase(this)">Combien d'appels tu reçois par semaine à peu près ? Et combien tu en manques quand t'es sur chantier ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Si t'en manques 3 par semaine, et que la moitié partent ailleurs — c'est 1 à 2 missions perdues par semaine. Sur une intervention moyenne à 200 euros, ça fait 200 à 400 euros de chiffre d'affaires qui partent chaque semaine. Sur un an, c'est entre 8 000 et 15 000 euros.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Utilise ses propres chiffres, pas les tiens. Si il dit "j'en manque 5", fais le calcul avec 5. Si il dit "j'en manque 1", reste sur 1. La crédibilité vient de la précision, pas de la générosité.</div>
+
+        <div class="chiffres-grid">
+          <div class="chiffre-bloc">
+            <div class="chiffre">2–3</div>
+            <div class="chiffre-label">missions captées par semaine (base réaliste)</div>
+          </div>
+          <div class="chiffre-bloc">
+            <div class="chiffre">150–300 €</div>
+            <div class="chiffre-label">intervention moyenne à Paris</div>
+          </div>
+          <div class="chiffre-bloc">
+            <div class="chiffre">~400 €/mois</div>
+            <div class="chiffre-label">CA additionnel estimé conservateur</div>
+          </div>
+          <div class="chiffre-bloc">
+            <div class="chiffre">10 %</div>
+            <div class="chiffre-label">commission sur nouveaux clients seulement</div>
+          </div>
+        </div>
+        <div class="warning">Ne jamais annoncer "tu vas gagner X euros de plus par mois". Poser les hypothèses et laisser l'artisan calculer. S'il calcule lui-même, il y croit.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-chiffres">Comparaison</span>
+        <span class="block-title">Le coût du service vs ce qu'il apporte</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Le forfait mensuel c'est [X] euros. La commission c'est 10 % sur les nouveaux clients captés. Si le service te rapporte 2 missions à 200 euros dans le mois, tu paies 40 euros de commission et tu as fait 360 euros net en plus. Le service est rentable dès la deuxième mission du mois.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Sur la phase de lancement</div>
+        <div class="phrase" onclick="copyPhrase(this)">Les deux premières semaines, pas de forfait. Tu paies uniquement la commission sur les missions réellement captées. Comme ça, tu vois ce que ça vaut avant de t'engager sur quoi que ce soit.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="chiffres-grid">
+          <div class="chiffre-bloc">
+            <div class="chiffre">150–300 €</div>
+            <div class="chiffre-label">forfait mensuel (selon volume)</div>
+          </div>
+          <div class="chiffre-bloc">
+            <div class="chiffre">2 500 €</div>
+            <div class="chiffre-label">coût minimal d'une secrétaire mi-temps</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RÉSEAU ══════════════════════════════════════════════════════════════ -->
+  <div id="sit-reseau" class="situation">
+    <div class="situation-intro">
+      <p>Le réseau de mutualisation — c'est l'argument différenciant. Il transforme les refus en opportunités. À présenter après avoir posé les bases, pas en ouverture.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reseau">Réseau</span>
+        <span class="block-title">Présenter la logique d'échange</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Y a des appels que tu ne peux pas prendre — zone trop loin, planning plein, intervention hors ta spécialité. Là, plutôt que de perdre ces demandes, je les redirige vers un autre artisan du réseau. En contrepartie, tu reçois des missions que d'autres ne peuvent pas prendre sur ta zone.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">C'est un échange, pas une perte. T'as un trou dans ton planning mardi après-midi — j'ai peut-être une urgence sur ton secteur qui attend. T'en bénéficies directement.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="success-note">C'est souvent l'argument qui fait basculer les indécis. Un artisan qui a des trous de planning voit immédiatement l'intérêt.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reseau">Réseau</span>
+        <span class="block-title">Rassurer sur les règles</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Les règles sont fixes : jamais sur un client que tu connais déjà, toujours avec ton accord préalable, et uniquement si tu as accepté ce fonctionnement. T'es pas obligé de participer au réseau pour bénéficier du reste du service — mais si tu y participes pas, tu peux pas en bénéficier non plus.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Je ne prends pas tes clients. T'es libre de refuser n'importe quelle réassignation. La logique c'est que plus le réseau est actif, plus tout le monde en bénéficie — y compris toi.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Si il hésite sur le réseau, ne pas insister. Il peut démarrer sans et rejoindre plus tard quand il a confiance.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ENGAGEMENTS ═════════════════════════════════════════════════════════ -->
+  <div id="sit-engagement" class="situation">
+    <div class="situation-intro">
+      <p>Ce qu'on lui demande en retour. À aborder clairement, sans minimiser. Un artisan bien cadré dès le départ crée moins de problèmes qu'un artisan auquel on n'a rien expliqué.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-engagement">Engagement</span>
+        <span class="block-title">Poser les règles du jeu clairement</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Ce que je te demande, c'est simple : activer le transfert le matin quand tu pars en intervention, confirmer les missions dans les 2 heures, et me prévenir si tu as un retard ou un empêchement. C'est tout.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Si une mission est confirmée et que tu ne te présentes pas sans prévenir, ça nuit au client et à moi. Deux absences non signalées et je réduis le volume de missions que je t'envoie. C'est pas une menace, c'est une règle de fonctionnement.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Sur la clause 12 mois</div>
+        <div class="phrase" onclick="copyPhrase(this)">Les clients que je t'apporte restent les tiens. Si tu arrêtes le service, ils restent dans ton carnet. La seule chose : si un de ces clients te recontacte directement dans les 12 mois, une commission s'applique quand même — parce que c'est moi qui l'ai capté. C'est écrit dans l'accord qu'on signe ensemble.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne jamais cacher la clause 12 mois. Un artisan qui la découvre après avoir signé sera bien plus problématique qu'un artisan qui la connaît dès le départ.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-engagement">Engagement</span>
+        <span class="block-title">Ce que tu t'engages à faire</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">De mon côté, je réponds aux appels entre 8h et 18h. Je te transmets chaque mission sur WhatsApp avec toutes les infos. Je gère les clients en cas de retard ou d'imprévu. Et chaque mois je te donne un bilan de ce que le service t'a apporté — tu vois exactement où tu en es.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Je ne promets pas un planning parfait ni des estimations toujours exactes. Ce que je promets, c'est qu'aucun appel ne sonnera dans le vide quand t'es indisponible.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RÉTICENCES ══════════════════════════════════════════════════════════ -->
+  <div id="sit-reticences" class="situation">
+    <div class="situation-intro">
+      <p>Les objections les plus fréquentes des artisans. Réponses factuelles, sans survente ni pression. Si la réticence est fondée, reconnaître la limite plutôt que de la contourner.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reticence">Réticence</span>
+        <span class="block-title">"Je gère bien mes clients tout seul"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Je suis sûr que t'es bien organisé. La question c'est pas de mieux gérer tes clients actuels — c'est de ne pas perdre ceux qui appellent pendant que t'es en intervention. Eux, t'en sais rien. Tu sais pas combien appellent et raccrochent sans laisser de message.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reticence">Réticence</span>
+        <span class="block-title">"Je veux pas qu'on gère mes clients à ma place"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Je prends pas tes clients. Je filtre les appels quand t'es indisponible, je transmets l'info, et toi tu décides. Le client reste le tien, la relation reste la tienne. Moi je suis juste là pour que le téléphone ne sonne pas dans le vide.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">C'est souvent la réticence la plus profonde. Ne pas la minimiser. Reformuler autant de fois que nécessaire.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reticence">Réticence</span>
+        <span class="block-title">"La commission c'est trop cher"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">La commission s'applique uniquement sur les nouveaux clients que j'ai captés pendant tes indisponibilités. Si sans moi ce client partait chez un concurrent, tu faisais 0. Avec moi, tu fais 90 % de l'intervention. Le calcul est simple.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Sur tes clients existants, zéro commission. Je prends une part seulement sur la valeur que j'ai créée — les nouveaux clients que t'aurais pas eus autrement.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reticence">Réticence</span>
+        <span class="block-title">"J'ai peur que ce soit compliqué à mettre en place"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">C'est deux codes à taper sur ton téléphone. Le matin pour activer, le soir pour couper. Je t'envoie un rappel aux deux moments. Au bout d'une semaine, c'est automatique. C'est tout ce que t'as à faire de ton côté.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase" onclick="copyPhrase(this)">Montre-lui le code directement : ##21*[numéro]# pour activer, ##61# pour désactiver. Fais-le taper devant toi si il veut.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Sortir le téléphone et montrer en direct est souvent plus convaincant que n'importe quelle explication.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reticence">Réticence</span>
+        <span class="block-title">"Et si tu te trompes sur un devis ?"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Pour les interventions simples, j'annonce une fourchette avec la mention "à confirmer sur place". Pour tout ce qui est complexe ou incertain, je dis au client qu'un devis sera établi lors de la visite — je prends pas de risque sur des travaux que je peux pas estimer correctement par téléphone.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-reticence">Réticence</span>
+        <span class="block-title">"Je connais pas, j'ai besoin de réfléchir"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Bien sûr, prends le temps qu'il te faut. Je te laisse le document qui résume le fonctionnement et les conditions. La seule chose je dirais c'est que les deux premières semaines sont sans forfait — donc t'as rien à perdre à essayer. Si ça te correspond pas, t'arrêtes, sans engagement.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Ne pas relancer immédiatement après. Laisser 48 à 72h, puis envoyer un message court de suivi.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CONCLUSION ═════════════════════════════════════════════════════════ -->
+  <div id="sit-conclusion" class="situation">
+    <div class="situation-intro">
+      <p>Fermer la conversation — avec ou sans signature immédiate. L'objectif est de repartir avec une prochaine étape claire.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-conclusion">Conclusion</span>
+        <span class="block-title">Si il est convaincu — signer</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Alors voilà ce qu'on fait : je t'envoie le document d'engagement ce soir par message, tu le lis, et si ça te convient tu le signes en ligne. Je configure le transfert avec toi la semaine prochaine et on démarre les deux semaines d'essai sans forfait.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Préciser la prochaine étape exacte</div>
+        <div class="phrase" onclick="copyPhrase(this)">J'ai besoin de ton numéro de téléphone professionnel pour configurer le transfert, et de ton Google Agenda pour synchroniser les missions. T'as 5 minutes maintenant ou je reviens vers toi cette semaine ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="success-note">Toujours finir sur une action concrète et datée. "Je t'envoie ça" sans date = risque d'oubli des deux côtés.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-conclusion">Conclusion</span>
+        <span class="block-title">Si il veut réfléchir — garder le lien</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Pas de problème. Je te laisse le document de présentation — c'est 2 pages, ça résume tout. Je te recontacte dans 3 jours pour voir si t'as des questions. Et si t'as une urgence d'ici là, n'hésite pas à m'appeler directement.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Message de suivi 72h après</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour [PRÉNOM], je me permets de revenir vers toi suite à notre échange. T'as eu le temps d'y réfléchir ? Des questions ou des points à éclaircir ?<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-conclusion">Conclusion</span>
+        <span class="block-title">Si il dit non — rester en bons termes</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Je comprends tout à fait. Si ta situation change — plus de travail, moins de temps pour gérer les appels — n'hésite pas à me recontacter. La porte est ouverte.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Un artisan qui dit non aujourd'hui peut dire oui dans 3 mois si son activité évolue. Ne jamais partir en mauvais termes — le réseau artisan est petit.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Script approche artisan — usage hors ligne</div>
+</div>
+
+<div class="copy-toast" id="toast">Phrase copiée</div>
+
+<script>
+const sitMap={'accroche':0,'benefices':1,'chiffres':2,'reseau':3,'engagement':4,'reticences':5,'conclusion':6};
+
+function switchSit(id){
+  document.querySelectorAll('.situation').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sit-'+id).classList.add('active');
+  document.querySelectorAll('.nav button')[sitMap[id]].classList.add('active');
+}
+
+function toggle(header){
+  const body=header.nextElementSibling;
+  const chev=header.querySelector('.chevron');
+  body.classList.toggle('open');
+  chev.classList.toggle('open',body.classList.contains('open'));
+}
+
+function copyPhrase(el){
+  const text=el.textContent.replace('cliquer pour copier','').trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    el.classList.add('copied');
+    setTimeout(()=>el.classList.remove('copied'),1500);
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1800);
+  });
+}
+</script>
+</body>
+</html>
